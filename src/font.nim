@@ -25,7 +25,7 @@ proc initFont*() =
   #     stdout.write '\n'
   glGenBuffers(1, texbuf.addr)
   glBindBuffer(GL_TEXTURE_BUFFER, texbuf)
-  glBufferData(GL_TEXTURE_BUFFER,256*65536,data[0].addr,GL_STATIC_DRAW)
+  glBufferData(GL_TEXTURE_BUFFER,32*65536,data[0].addr,GL_STATIC_DRAW)
   glGenTextures(1,texture.addr)
   glBindTexture(GL_TEXTURE_BUFFER,texture)
   glTexBuffer(GL_TEXTURE_BUFFER,GL_R8UI,texbuf)
@@ -35,6 +35,7 @@ proc initFont*() =
   uColor = glGetUniformLocation(textShader, "uColor")
 proc quitFont*() =
   glDeleteTextures(1, texture.addr)
+  glDeleteBuffers(1,texbuf.addr)
 proc initTextInstance*(ti: var TextInstance, str: string) =
   var
     text:seq[byte]

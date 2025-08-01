@@ -167,7 +167,10 @@ flat in uint chr;
 uniform usamplerBuffer texture1;
 out vec4 FragColor;
 void main(){
-  FragColor=Color*float(texelFetch(texture1, int(chr)*256+int(TexCoord.y*15)*16+int(TexCoord.x*15)).r)/255;
+  FragColor=Color*float(
+    int(texelFetch(texture1,
+      int(chr)*32+((int(TexCoord.y*15)*2)&31)+((int(TexCoord.x*15)>>3)&1)
+    ).r)>>(7-(int(TexCoord.x*15)&7))&1);
 }
 """)])
   initShaderSrc(particleShader, [(GL_VERTEX_SHADER,
