@@ -1,6 +1,6 @@
 import nimgl/[glfw, opengl]
 import std/[strutils]
-import shaders, globals, gameplay,songs,results, audio, font,load
+import shaders, globals, gameplay,songs,results, audio, font,load,res
 
 proc main(): int =
   # GLFW
@@ -39,6 +39,8 @@ proc main(): int =
   defer: quitShaders()
   initFont()
   defer: quitFont()
+  initRes()
+  defer:quitRes()
   initLoads()
   defer:quitLoads()
   while state != sEndGame:

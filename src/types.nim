@@ -1,16 +1,19 @@
 import nimgl/[opengl]
+import glm
 import std/[tables]
 type
   RType* = enum
     rFloat,rNFloat,rDouble,rInt,rUInt,rShort,rUShort,rByte,rUByte
   Rule* = (seq[(RType,int,int)],int)
-  RenderInstance* = object
+  RenderInstance* = object of RootObj
     vao*,ebo*:GLuint
     elements*:GLsizei
     vbos*:seq[(GLuint,int,Rule)]
     texture*:GLuint
     shader*:GLuint
     uniforms*:Table[string,GLint]
+  Rect* = object of RenderInstance
+    colors*:Mat4f
 type
   Note* = object
     t1*, t2*: GLfloat

@@ -75,6 +75,13 @@ proc initTextInstance*(ti: var TextInstance, str: string) =
 proc destroyTextInstance*(ti: var TextInstance) =
   glDeleteBuffers(3, ti.vbo.addr)
   glDeleteVertexArrays(1, ti.vao.addr)
+  ti.vao=0
+  ti.vbo=0
+  ti.ebo=0
+  ti.ibo=0
+  ti.length=0
+  ti.cap=0
+  ti.width=0
 proc update*(ti:var TextInstance, str:string) =
   glBindBuffer(GL_ARRAY_BUFFER, ti.ibo)
   defer:glBindBuffer(GL_ARRAY_BUFFER,0)

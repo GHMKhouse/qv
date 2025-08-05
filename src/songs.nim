@@ -1,11 +1,12 @@
 import nimgl/[opengl,glfw]
-import std/[os]
-import globals,font,load
+import std/[os,tables]
+import globals,font,load,rect,types,unirender,res,shaders
 
 var
-  songList:seq[(string,TextInstance)]
+  songList:seq[(string,TextInstance,Rect)]
   chosen:int
   dest=0
+  bg:RenderInstance
 proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
     mods: int32): void {.cdecl.} =
   case action
@@ -30,6 +31,22 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
       discard
   else:
     discard
+proc render()=
+  glClearColor(0, 0, 0, 1)
+  glClear(GL_COLOR_BUFFER_BIT)
+  bg.render(1,0):
+    discard
+  let sl=songList.addr
+  for i in 0..<sl[].len:
+    let
+      color:(uint8,uint8,uint8,uint8)=
+        if i==chosen:(
+          if autoPlay:(255,0,0,255) else:(0,255,255,255))
+        else:(255,255,255,255)
+    sl[][i][2].drawRect(-0.95,0.85-0.16*i.float32,sl[][i][1].width/16*0.04*2,0.04*2,0,0.5)
+    sl[][i][1].render(-0.95,0.85-0.16*i.float32,color=color)
+      
+  
 proc songs*():State=
   discard window.setKeyCallback(keyProc)
   songList.setLen(0)
@@ -38,33 +55,35 @@ proc songs*():State=
   for kind,song in walkDir("maps",relative=true):
     case kind
     of pcDir,pcLinkToDir:
-      var ti:TextInstance
+      var
+        ti:TextInstance
+        ri:Rect
       initTextInstance(ti,song)
-      songList.add (song,ti)
+      initRect(ri,[(0'u8,0'u8,0'u8,128'u8),(0'u8,0'u8,0'u8,128'u8),(0'u8,0'u8,0'u8,128'u8),(0'u8,0'u8,0'u8,128'u8)])
+      songList.add (song,ti,ri)
     else:
       discard
   defer:
-    for _,ti in songList.mitems():
+    for _,ti,ri in songList.mitems():
       destroyTextInstance(ti)
+      destroyRenderInstance(ri)
+  initRenderInstance(bg,[0'u32,1,2,2,3,0],[(@[(rFloat,2,0)],2*sizeof(float32))],textures["songsbg"].glTex,bgShader,[])
+  defer:destroyRenderInstance(bg)
+  var
+    verts: array[8, GLfloat] = [-1, -1, -1, 1, 1, 1, 1, -1]
+  bg.updateBuffer(0,8*sizeof(float32),verts[0].addr)
+
   var outro=false
   while not window.windowShouldClose():
-    glClearColor(0, 0, 0, 1)
-    glClear(GL_COLOR_BUFFER_BIT)
-    for i,(song,ti) in songList.mpairs():
-      let
-        color:(uint8,uint8,uint8,uint8)=
-          if i==chosen:(
-            if autoPlay:(255,0,0,255) else:(0,255,255,255))
-          else:(255,255,255,255)
-      ti.render(-0.95,0.85-0.16*i.float32,color=color)
     if not outro:
-      loadOutro()
+      loadOutro(render)
       outro=true
     else:
+      render()
       window.swapBuffers()
-      glfwPollEvents()
+      glfwWaitEvents()
     if dest==1:
       break
   if window.windowShouldClose():quit(QuitSuccess)
-  loadIntro()
+  loadIntro(render)
   return sGamePlay

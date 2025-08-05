@@ -21,28 +21,32 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
       discard
   else:
     discard
+
+var
+  scoreText:TextInstance
+proc render()=
+  glClearColor(0, 0, 0, 1)
+  glClear(GL_COLOR_BUFFER_BIT)
+  scoreText.render(-0.8,0.8,alignLeft,0.16)
+
 proc results*():State=
   discard window.setKeyCallback(keyProc)
   dest=0
-  var
-    scoreText:TextInstance
   initTextInstance(scoreText, fmt"{score:07}")
   defer: destroyTextInstance(scoreText)
   var outro=false
   while not window.windowShouldClose():
-    glClearColor(0, 0, 0, 1)
-    glClear(GL_COLOR_BUFFER_BIT)
-    scoreText.render(-0.8,0.8,alignLeft,0.16)
     if not outro:
-      loadOutro()
+      loadOutro(render)
       outro=true
     else:
+      render()
       window.swapBuffers()
-      glfwPollEvents()
+      glfwWaitEvents()
     if dest!=0:
       break
   if window.windowShouldClose():quit(QuitSuccess)
-  loadIntro()
+  loadIntro(render)
   case dest
   of 1:
     return sSongs
