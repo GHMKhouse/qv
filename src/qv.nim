@@ -1,5 +1,5 @@
 import nimgl/[glfw, opengl]
-import std/[strutils]
+import std/[strutils,os]
 import shaders, globals, gameplay,songs,results, audio, font,load,res,gameedit
 
 proc parseOpenGLVersion(versionStr: string): (int, int) =
@@ -93,4 +93,5 @@ proc main(): int =
   return QuitSuccess
 
 when isMainModule:
+  setCurrentDir(getAppDir())
   quit(main())

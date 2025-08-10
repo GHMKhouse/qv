@@ -124,30 +124,30 @@ proc gameplay*(): State =
   igt=0
   floor=0
   block readChart:
-    if fileExists("maps"/chartPath/"chart.qv"):
-      var s = openFileStream("maps"/chartPath/"chart.qv", fmRead)
+    if fileExists(getAppDir()/"maps"/chartPath/"chart.qv"):
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.qv", fmRead)
       defer: s.close()
       readChartFromBinary(chart, s)
-    elif fileExists("maps"/chartPath/"chart.cht"):
-      var s = openFileStream("maps"/chartPath/"chart.cht", fmRead)
+    elif fileExists(getAppDir()/"maps"/chartPath/"chart.cht"):
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.cht", fmRead)
       defer: s.close()
       readCht(chart, s)
-      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      var ws = openFileStream(getAppDir()/"maps"/chartPath/"chart.qv", fmWrite)
       defer: ws.close()
       writeChart(chart,ws)
     else:
-      var s = openFileStream("maps"/chartPath/"chart.aff", fmRead)
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.aff", fmRead)
       defer: s.close()
       readAff(s,chart)
-      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      var ws = openFileStream(getAppDir()/"maps"/chartPath/"chart.qv", fmWrite)
       defer: ws.close()
       writeChart(chart,ws)
   initChart(chart)
   defer:
     destroyRenderInstance(chart.ri)
     chart=Chart.default
-  if fileExists("maps"/chartPath/"music.ogg"):
-    loadMusic("maps"/chartPath/"music.ogg")
+  if fileExists(getAppDir()/"maps"/chartPath/"music.ogg"):
+    loadMusic(getAppDir()/"maps"/chartPath/"music.ogg")
   else:
     raiseAssert "only OGG supported"
   initTextInstance(titleText, chart.title)

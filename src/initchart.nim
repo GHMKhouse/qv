@@ -24,7 +24,8 @@ proc initChart*(chart: var Chart,j:bool=true) =
     ],0,noteShader,["uMVP","uXSF","uSpeed","uFloor","uLinePos","uPersF"])
   chart.ri.updateBuffer(0,8*sizeof(GLfloat),verts[0].addr)
   chart.ri.updateBuffer(1,4,data[0].addr)
-  chart.ri.updateBuffer(2,len(chart.notes)*sizeof(Note),chart.notes[0].addr)
+  if chart.notes.len>0:
+    chart.ri.updateBuffer(2,len(chart.notes)*sizeof(Note),chart.notes[0].addr)
 proc updateNotes*(chart: var Chart)=
   for n in chart.notes.mitems():
     n.f1=convertFloor(n.t1,chart.events)
@@ -33,7 +34,10 @@ proc updateNotes*(chart: var Chart)=
 proc updateChart*(chart: var Chart)=
   chart.ri.updateBuffer(2,len(chart.notes)*sizeof(Note),chart.notes[0].addr)
 proc addNote*(chart:var Chart,note:Note):int {.discardable.}=
-  result=(chart.notes.seek(proc (x:Note):bool=x.t1>note.t1)+len(chart.notes)) mod len(chart.notes)
+  if chart.notes.len==0:
+    result=0
+  else:
+    result=(chart.notes.seek(proc (x:Note):bool=x.t1>note.t1)+len(chart.notes)) mod len(chart.notes)
   chart.notes.insert(note,result)
   if chart.notes[result].t1==chart.notes[result].t2:
     chart.notes[result].x2=chart.notes[result].x1

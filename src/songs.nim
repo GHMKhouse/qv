@@ -1,6 +1,8 @@
 import nimgl/[opengl,glfw]
-import std/[os,tables]
+import std/[os,tables,streams]
 import globals,font,load,rect,types,unirender,res,shaders,message
+when defined(windows):
+  import filewindow,binchart
 
 var
   songList:seq[(string,TextInstance,Rect)]
@@ -30,6 +32,26 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
     case key
     of GLFWKey.Escape:
       quit(QuitSuccess)
+    of GLFWKey.Equal:
+      when defined(windows):
+        let
+          musicPath=openFileDialog()
+        if musicPath.len>0:
+          let
+            (path,name,ext)=musicPath.splitFile()
+          createDir(getAppDir()/"maps"/name)
+          copyFile(musicPath,getAppDir()/"maps"/name/"music.ogg")
+          var s=openFileStream(getAppDir()/"maps"/name/"chart.qv",fmWrite)
+          var c:Chart
+          c.events.add Event(t1:0,t2:0,bpm:120,speed:1,jump:0,xsEasing:1,xs1:0,xs2:0)
+          c.writeChart(s)
+          s.close()
+          while not fileExists(getAppDir()/"maps"/name/"chart.qv"):
+            sleep(200)
+          dest=2
+          chartPath=name
+      else:
+        discard
     else:
       discard
   else:
@@ -46,8 +68,8 @@ proc render()=
         if i==chosen:(
           if autoPlay:(255,0,0,255) else:(0,255,255,255))
         else:(255,255,255,255)
-    sl[][i][2].drawRect(-0.95,0.85-0.16*i.float32,sl[][i][1].width/16*0.04*2,0.04*2,0,0.5)
-    sl[][i][1].render(-0.95,0.85-0.16*i.float32,color=color)
+    sl[][i][2].drawRect(-0.95,0.85-0.16*(i-chosen).float32,sl[][i][1].width/16*0.04*2,0.04*2,0,0.5)
+    sl[][i][1].render(-0.95,0.85-0.16*(i-chosen).float32,color=color)
   renderMessages()
       
   
@@ -59,7 +81,7 @@ proc songs*():State=
   songList.setLen(0)
   chosen=0
   dest=0
-  for kind,song in walkDir("maps",relative=true):
+  for kind,song in walkDir(getAppDir()/"maps",relative=true):
     case kind
     of pcDir,pcLinkToDir:
       var

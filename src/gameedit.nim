@@ -176,15 +176,15 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
         let t=myParseFloat(s)
         if not t.isNaN():
           chart.events[eventI].speed=t
-        updateNotes(chart)
-        reDrawVLines()
+          updateNotes(chart)
+          reDrawVLines()
     of GLFWKey.P:
       startInput do(s:string):
         let t=myParseFloat(s)
         if not t.isNaN():
           chart.events[eventI].jump=t
-        updateNotes(chart)
-        reDrawVLines()
+          updateNotes(chart)
+          reDrawVLines()
     of GLFWKey.C:
       if control and chosenNotes.len>0:
         copiedNotes.setLen(0)
@@ -222,6 +222,12 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
       for i in chosenNotes:
         dec chart.notes[i].width
       chart.updateChart()
+    of GLFWKey.L:
+      startInput do(s:string):
+        let t=myParseFloat(s)
+        if not t.isNaN():
+          chart.offset=t
+          updateNotes(chart)
     of GLFWKey.LeftShift,GLFWKey.RightShift:
       shift=true
     of GLFWKey.LeftControl,GLFWKey.RightControl:
@@ -380,22 +386,22 @@ proc gameedit*(): State =
     floor=0
     inputMode=false
   safeDo:
-    if fileExists("maps"/chartPath/"chart.qv"):
-      var s = openFileStream("maps"/chartPath/"chart.qv", fmRead)
+    if fileExists(getAppDir()/"maps"/chartPath/"chart.qv"):
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.qv", fmRead)
       defer: s.close()
       readChartFromBinary(chart, s)
-    elif fileExists("maps"/chartPath/"chart.cht"):
-      var s = openFileStream("maps"/chartPath/"chart.cht", fmRead)
+    elif fileExists(getAppDir()/"maps"/chartPath/"chart.cht"):
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.cht", fmRead)
       defer: s.close()
       readCht(chart, s)
-      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      var ws = openFileStream("getAppDir()/maps"/chartPath/"chart.qv", fmWrite)
       defer: ws.close()
       writeChart(chart,ws)
     else:
-      var s = openFileStream("maps"/chartPath/"chart.aff", fmRead)
+      var s = openFileStream(getAppDir()/"maps"/chartPath/"chart.aff", fmRead)
       defer: s.close()
       readAff(s,chart)
-      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      var ws = openFileStream(getAppDir()/"maps"/chartPath/"chart.qv", fmWrite)
       defer: ws.close()
       writeChart(chart,ws)
   safeDo:
@@ -406,8 +412,8 @@ proc gameedit*(): State =
     destroyRenderInstance(chart.ri)
     chart=Chart.default
   safeDo:
-    if fileExists("maps"/chartPath/"music.ogg"):
-      loadMusic("maps"/chartPath/"music.ogg")
+    if fileExists(getAppDir()/"maps"/chartPath/"music.ogg"):
+      loadMusic(getAppDir()/"maps"/chartPath/"music.ogg")
     else:
       raiseAssert "only OGG supported"
   safeDo:
