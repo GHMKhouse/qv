@@ -15,6 +15,6 @@ proc initRect*(ri:var Rect,colors:array[4,(uint8,uint8,uint8,uint8)])=
     ri.colors[x,2]=colors[x][2].float32/255
     ri.colors[x,3]=colors[x][3].float32/255
 proc drawRect*(ri:var Rect,x,y,w,h:float32,xAlign,yAlign:float32)=
-  ri.render(1,0):
+  ri.render(1):
     glUniformMatrix4fv(ri.uColors,1,false,ri.colors.caddr)
     glUniform4f(ri.uPnS,x-xAlign*w,y-yAlign*h,w,h)

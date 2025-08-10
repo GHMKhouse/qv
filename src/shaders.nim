@@ -65,6 +65,7 @@ var
   maskShader*:GLuint
   bgShader*:GLuint
   rectShader*:GLuint
+  vlineShader*:GLuint
 macro initShader(idn:untyped)=
   idn.expectKind nnkIdent
   var
@@ -89,6 +90,7 @@ proc initShaders*() =
   initShader mask
   initShader bg
   initShader rect
+  initShader vline
 macro delShader(idn:untyped)=
   idn.expectKind nnkIdent
   var
@@ -104,3 +106,4 @@ proc quitShaders*() =
   delShader mask
   delShader bg
   delShader rect
+  delShader vline

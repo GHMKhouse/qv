@@ -5,6 +5,7 @@ flat in uint chr;
 uniform usamplerBuffer texture1;
 out vec4 FragColor;
 void main(){
+  if(chr==uint(0))discard;
   FragColor=Color*float(
     int(texelFetch(texture1,
       int(chr)*32+((int(TexCoord.y)*2)&31)+((int(TexCoord.x)>>3)&1)

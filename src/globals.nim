@@ -3,7 +3,8 @@ import types
 var window*: GLFWWindow
 type
   State* = enum
-    sTitle, sMainMenu, sSongs, sOptions, sLoading, sGamePlay, sResults, sEndGame
+    sTitle, sMainMenu, sSongs, sOptions, sLoading, sGamePlay, sGameEdit, sResults, sEndGame
+var compatibilityMode*:bool
 var
   scrnW* = 1200
   scrnH* = 900

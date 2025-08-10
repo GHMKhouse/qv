@@ -25,7 +25,7 @@ proc convertFloor*(time: float32, speeds: seq[Event]): float32 =
     ls = speeds[0].speed
     lt = 0'f32
   for event in speeds:
-    if t < event.t1-lt:
+    if t <= event.t1-lt:
       result+=ls*t
       return
     else:

@@ -75,7 +75,7 @@ template withBuffer*(ri:var RenderInstance,idx:int,body:untyped)=
     defer:
       glBindBuffer(GL_ARRAY_BUFFER,0)
     body
-template render*(ri:var RenderInstance,instanceCount:int=1,start:int=0,assignments:untyped)=
+template render*(ri:var RenderInstance,instanceCount:int=1,assignments:untyped)=
   block:
     glBindTexture(GL_TEXTURE2D,ri.texture)
     defer:glBindTexture(GL_TEXTURE2D,0)
@@ -86,4 +86,4 @@ template render*(ri:var RenderInstance,instanceCount:int=1,start:int=0,assignmen
     glBindVertexArray(ri.vao)
     defer:
       glBindVertexArray(0)
-    glDrawElementsInstancedBaseInstance(GL_TRIANGLES,ri.elements,GL_UNSIGNED_INT,nil,instanceCount.GLsizei,start.GLuint)
+    glDrawElementsInstanced(GL_TRIANGLES,ri.elements,GL_UNSIGNED_INT,nil,instanceCount.GLsizei)

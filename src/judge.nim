@@ -1,5 +1,5 @@
 import nimgl/opengl
-import globals, types, unirender
+import globals, types, unirender, res, audio, tables
 type
   JudgementKind* = enum jkXExact, jkExact, jkFine, jkGood, jkLost
   Judgement* = object
@@ -42,6 +42,7 @@ proc makeJudgement*(judgement: Judgement) =
     of jkFine: inc fine
     of jkGood: inc good
     else: discard
+    playSound(sounds["hitsnd"])
   else:
     combo = 0
     inc lost
@@ -84,7 +85,7 @@ proc dt2Judgement*(dt:float32):int=
 proc dealKey*()=
   while jNotes < notes.len and chart.notes[notes[jNotes]].t1<igt and dt2Judgement(igt-chart.notes[notes[jNotes]].t1)>=4:
     inc jNotes
-  while jCatches < catches.len and dt2Judgement(igt-chart.notes[catches[jCatches]].t1)<2:
+  while jCatches < catches.len and dt2Judgement(igt-chart.notes[catches[jCatches]].t1)<4:
     if chart.notes[catches[jCatches]].kind!=0 and chart.notes[catches[jCatches]].judged==0:
       makeJudgement(Judgement(noteId: catches[jCatches], t: chart.notes[catches[jCatches]].t1, x: chart.notes[catches[jCatches]].x1,
         w: chart.notes[catches[jCatches]].width.float32/255, kind: jkXExact))
@@ -115,14 +116,14 @@ proc dealUpdate*()=
       if chart.notes[judgedNotes].t1!=chart.notes[judgedNotes].t2:
         inc judged
     inc judgedNotes
-  while jCatches < catches.len and dt2Judgement(igt-chart.notes[catches[jCatches]].t1)<2:
+  while jCatches < catches.len and dt2Judgement(igt-chart.notes[catches[jCatches]].t1)<4:
     if chart.notes[catches[jCatches]].judged==0 and keyn>0:
       makeJudgement(Judgement(noteId: catches[jCatches], t: chart.notes[catches[jCatches]].t1, x: chart.notes[catches[jCatches]].x1,
         w: chart.notes[catches[jCatches]].width.float32/255, kind: jkXExact))
       if chart.notes[catches[jCatches]].t1!=chart.notes[catches[jCatches]].t2:
         postJudges.add catches[jCatches]
     inc jCatches
-  while postJudged<postJudges.len and dt2Judgement(igt-chart.notes[postJudges[postJudged]].t2)>=2 and igt>chart.notes[postJudges[postJudged]].t2:
+  while postJudged<postJudges.len and dt2Judgement(igt-chart.notes[postJudges[postJudged]].t2)>=4 and igt>chart.notes[postJudges[postJudged]].t2:
     if keyn<=0:
       makeJudgement(Judgement(noteId: postJudges[postJudged], t: igt, x: chart.notes[postJudges[postJudged]].x2,
         w: chart.notes[postJudges[postJudged]].width.float32/255, kind: jkLost))
@@ -130,7 +131,7 @@ proc dealUpdate*()=
       makeJudgement(Judgement(noteId: postJudges[postJudged], t: igt, x: chart.notes[postJudges[postJudged]].x2,
         w: chart.notes[postJudges[postJudged]].width.float32/255, kind: jkXExact))
     inc postJudged
-  while postJudged<postJudges.len and dt2Judgement(igt-chart.notes[postJudges[postJudged]].t2)<2:
+  while postJudged<postJudges.len and dt2Judgement(igt-chart.notes[postJudges[postJudged]].t2)<4:
     if keyn>0:
       makeJudgement(Judgement(noteId: postJudges[postJudged], t: igt, x: chart.notes[postJudges[postJudged]].x2,
         w: chart.notes[postJudges[postJudged]].width.float32/255, kind: jkXExact))

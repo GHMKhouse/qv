@@ -40,16 +40,31 @@ proc initTextInstance*(ti: var TextInstance, str: string) =
   var
     text:seq[byte]
     offset:uint16=0
+    lineno:uint16=0
+    width:uint16=0
   for r in str.toRunes():
+    if r.int==0:continue
     let c=r.uint16
-    text.add byte(c and 255)
-    text.add byte(c shr 8)
-    text.add byte(offset and 255)
-    text.add byte(offset shr 8)
-    offset+=widthes[c]
-  # echo text,offset
-  ti.length=(text.len) shr 2
-  ti.width=offset.int
+    case c
+    of ord('\n'):
+      width=max(width,offset)
+      inc lineno
+      offset=0
+      width=max(width,offset)
+    of ord(' '):
+      offset+=8
+      width=max(width,offset)
+    else:
+      text.add byte(c and 255)
+      text.add byte(c shr 8)
+      text.add byte(offset and 255)
+      text.add byte(offset shr 8)
+      text.add byte(lineno and 255)
+      text.add byte(lineno shr 8)
+      offset+=widthes[c]
+      width=max(width,offset)
+  ti.length=(text.len) div 6
+  ti.width=width.int
   glGenVertexArrays(1, ti.vao.addr)
   glBindVertexArray(ti.vao)
   glGenBuffers(3, ti.vbo.addr)
@@ -67,7 +82,7 @@ proc initTextInstance*(ti: var TextInstance, str: string) =
     glBufferData(GL_ARRAY_BUFFER, len(text), text[0].addr, GL_STATIC_DRAW)
   else:
     glBufferData(GL_ARRAY_BUFFER, len(text), nil, GL_STATIC_DRAW)
-  glVertexAttribIPointer(1, 2, GL_UNSIGNED_SHORT, 4, nil)
+  glVertexAttribIPointer(1, 3, GL_UNSIGNED_SHORT, 6, nil)
   glEnableVertexAttribArray(1)
   glVertexAttribDivisor(1, 1)
   glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -88,15 +103,31 @@ proc update*(ti:var TextInstance, str:string) =
   var
     text:seq[byte]
     offset:uint16=0
+    lineno:uint16=0
+    width:uint16=0
   for r in str.toRunes():
+    if r.int==0:continue
     let c=r.uint16
-    text.add byte(c and 255)
-    text.add byte(c shr 8)
-    text.add byte(offset and 255)
-    text.add byte(offset shr 8)
-    offset+=widthes[c]
-  ti.length=(text.len) shr 2
-  ti.width=offset.int
+    case c
+    of ord('\n'):
+      width=max(width,offset)
+      inc lineno
+      offset=0
+      width=max(width,offset)
+    of ord(' '):
+      offset+=8
+      width=max(width,offset)
+    else:
+      text.add byte(c and 255)
+      text.add byte(c shr 8)
+      text.add byte(offset and 255)
+      text.add byte(offset shr 8)
+      text.add byte(lineno and 255)
+      text.add byte(lineno shr 8)
+      offset+=widthes[c]
+      width=max(width,offset)
+  ti.length=(text.len) div 6
+  ti.width=width.int
   if text.len>ti.cap:
     glBufferData(GL_ARRAY_BUFFER, text.len, text[0].addr, GL_STATIC_DRAW)
     ti.cap=text.len

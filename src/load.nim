@@ -31,7 +31,7 @@ proc loadIntro*(fn:proc())=
       let progress=log10(9*(t-st)/duration+1)
       # bg.render(1,0):
       #   discard
-      mask.render(1,0):
+      mask.render(1):
         glUniform1f(mask.uProgress,progress)
       window.swapBuffers()
       lt=t
@@ -54,7 +54,7 @@ proc loadOutro*(fn:proc())=
       let progress=1-log10(9*(t-st)/duration+1)
       # bg.render(1,0):
       #   discard
-      mask.render(1,0):
+      mask.render(1):
         glUniform1f(mask.uProgress,progress)
       window.swapBuffers()
       lt=t

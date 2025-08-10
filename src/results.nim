@@ -1,6 +1,6 @@
 import nimgl/[opengl,glfw]
 import std/[strformat]
-import globals,font,load
+import globals,font,load,message
 var dest=0
 proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
     mods: int32): void {.cdecl.} =
@@ -28,9 +28,13 @@ proc render()=
   glClearColor(0, 0, 0, 1)
   glClear(GL_COLOR_BUFFER_BIT)
   scoreText.render(-0.8,0.8,alignLeft,0.16)
+  renderMessages()
 
 proc results*():State=
   discard window.setKeyCallback(keyProc)
+  discard window.setScrollCallback(nil)
+  discard window.setCursorPosCallback(nil)
+  discard window.setMouseButtonCallback(nil)
   dest=0
   initTextInstance(scoreText, fmt"{score:07}")
   defer: destroyTextInstance(scoreText)

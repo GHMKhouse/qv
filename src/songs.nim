@@ -1,6 +1,6 @@
 import nimgl/[opengl,glfw]
 import std/[os,tables]
-import globals,font,load,rect,types,unirender,res,shaders
+import globals,font,load,rect,types,unirender,res,shaders,message
 
 var
   songList:seq[(string,TextInstance,Rect)]
@@ -19,6 +19,9 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
     of GLFWKey.Enter:
       chartPath=songList[chosen][0]
       dest=1
+    of GLFWKey.Backspace:
+      chartPath=songList[chosen][0]
+      dest=2
     of GLFWKey.GraveAccent: # `
       autoPlay = not autoPlay
     else:
@@ -34,7 +37,7 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
 proc render()=
   glClearColor(0, 0, 0, 1)
   glClear(GL_COLOR_BUFFER_BIT)
-  bg.render(1,0):
+  bg.render(1):
     discard
   let sl=songList.addr
   for i in 0..<sl[].len:
@@ -45,10 +48,14 @@ proc render()=
         else:(255,255,255,255)
     sl[][i][2].drawRect(-0.95,0.85-0.16*i.float32,sl[][i][1].width/16*0.04*2,0.04*2,0,0.5)
     sl[][i][1].render(-0.95,0.85-0.16*i.float32,color=color)
+  renderMessages()
       
   
 proc songs*():State=
   discard window.setKeyCallback(keyProc)
+  discard window.setScrollCallback(nil)
+  discard window.setCursorPosCallback(nil)
+  discard window.setMouseButtonCallback(nil)
   songList.setLen(0)
   chosen=0
   dest=0
@@ -82,8 +89,14 @@ proc songs*():State=
       render()
       window.swapBuffers()
       glfwWaitEvents()
-    if dest==1:
+    if dest!=0:
       break
   if window.windowShouldClose():quit(QuitSuccess)
   loadIntro(render)
-  return sGamePlay
+  case dest
+  of 1:
+    return sGamePlay
+  of 2:
+    return sGameEdit
+  else:
+    discard

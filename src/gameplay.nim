@@ -1,18 +1,24 @@
 
 import nimgl/[opengl, glfw]
 import glm
-import std/[streams, monotimes, strformat,os]
-import readcht, initchart, shaders, types, globals, font, unirender,audio,judge,aff2cht,load
-var dest=0
+import std/[streams, monotimes, strformat,os,tables]
+import readcht, initchart, shaders, types, globals, font, unirender,audio,judge,aff2cht,load,res,binchart,message,rect
+
+var
+  dest=0
 proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
-    mods: int32): void {.cdecl.} =
+    mods: int32): void {.cdecl,safe.} =
   case action
   of GLFWPress:
     case key
-    of GLFWKey.Home:
+    of GLFWKey.GraveAccent:
       dest=1
+    of GLFWKey.Enter:
+      if not musicPlaying():
+        setMusicPosF(max(0,getMusicPosF()-3))
+        resumeMusic()
     else:
-      if not autoPlay:
+      if musicPlaying() and not autoPlay:
         dealKey()
       inc keyn
   of GLFWRelease:
@@ -20,7 +26,12 @@ proc keyProc(window: GLFWWindow, key: int32, scancode: int32, action: int32,
       dec keyn
       if keyn<0:keyn=0
     else:
-      dest=2
+      if musicPlaying():
+        pauseMusic()
+        for p in particles[].mitems():
+          p = Particle.default
+      else:
+        dest=2
   else:
     discard
 
@@ -30,13 +41,16 @@ var
   inds: array[6, Gluint] = [0, 1, 2, 2, 3, 0]
 const
   linePos = -0.667
+  xSF = 0.2
+  persF = 0.4
 
 var
-  lineRI, particleRI:RenderInstance
+  lineRI, particleRI, gameBg:RenderInstance
   titleText, levelText: TextInstance
   accText,comboText,judgeText,scoreText: TextInstance
   mvp:Mat4[GLfloat]
   floor:float32
+  progressBar:Rect
 proc render()=
   accText.update(fmt"{acc*100:.2f}%")
   comboText.update(fmt"{combo}/{maxCombo}/{judged}")
@@ -45,27 +59,35 @@ proc render()=
   particleRI.updateBuffer(1,256*sizeof(Particle),particles)
   glClearColor(0, 0, 0, 1)
   glClear(GL_COLOR_BUFFER_BIT)
+  gameBg.render(1):discard
   titleText.render(-0.95, -0.85)
   judgeText.render(-0.95, 0.85)
   levelText.render(0.95, -0.85, alignRight)
   scoreText.render(0.95, 0.85, alignRight)
   accText.render(0, -0.85, alignMiddle)
   comboText.render(0, 0.75, alignMiddle)
-  chart.ri.render(len(chart.notes),lastNote):
+  chart.ri.render(len(chart.notes)):
     glUniformMatrix4fv(chart.ri.uMVP, 1, false, mvp.caddr)
     glUniform1f(chart.ri.uSpeed, speed)
-    glUniform1f(chart.ri.uXSF, 0.1)
+    glUniform1f(chart.ri.uXSF, xSF)
     glUniform1f(chart.ri.uFloor, floor)
     glUniform1f(chart.ri.uLinePos, linePos)
-  lineRI.render(1,0):
+    glUniform1f(chart.ri.uPersF, persF)
+  lineRI.render(1):
     glUniformMatrix4fv(lineRI.uMVP, 1, false, mvp.caddr)
     glUniform1f(lineRI.uLinePos, linePos)
-  particleRI.render(256,0):
+  particleRI.render(256):
     glUniformMatrix4fv(particleRI.uMVP, 1, false, mvp.caddr)
     glUniform1f(particleRI.uLinePos, linePos)
     glUniform1f(particleRI.uTime, igt)
+    glUniform1f(particleRI.uPersF, persF)
+  drawRect(progressBar,-1,1,getMusicPosF()/musicLength()*2,0.025,0,1)
+  renderMessages()
 proc gameplay*(): State =
   discard window.setKeyCallback(keyProc)
+  discard window.setScrollCallback(nil)
+  discard window.setCursorPosCallback(nil)
+  discard window.setMouseButtonCallback(nil)
   dest=0
   initRenderInstance(lineRI,inds,[(@[(rFloat,2,0)],2*sizeof(GLfloat))],0,lineShader,["uMVP","uLinePos"])
   defer:
@@ -73,16 +95,21 @@ proc gameplay*(): State =
   lineRI.updateBuffer(0,8*sizeof(GLfloat),verts[0].addr)
   initRenderInstance(particleRI,inds,[
     (@[(rFloat,2,0)],2*sizeof(GLfloat)),
-    (@[(rFloat,3,1),(rUByte,3,1)],sizeof(Particle))],0,particleShader,["uMVP","uLinePos","uTime"])
+    (@[(rFloat,3,1),(rUByte,3,1)],sizeof(Particle))],0,particleShader,["uMVP","uLinePos","uTime","uPersF"])
   defer:destroyRenderInstance(particleRI)
   particleRI.updateBuffer(0,8*sizeof(GLfloat),verts[0].addr)
+  initRenderInstance(gameBg,[0'u32,1,2,2,3,0],[(@[(rFloat,2,0)],2*sizeof(float32))],textures["gamebg"].glTex,bgShader,[])
+  defer:destroyRenderInstance(gameBg)
+  gameBg.updateBuffer(0,8*sizeof(GLfloat),verts[0].addr)
   particles=cast[ptr array[256, Particle]](alloc(256*sizeof(Particle)))
   defer:dealloc(particles)
   for p in particles[].mitems():
     p = Particle.default
   particleRI.updateBuffer(1,256*sizeof(Particle),particles)
-
+  initRect(progressBar,[(0xff'u8,0xff'u8,0xff'u8,0xff'u8),(0xff,0xff,0xff,0xff),(0xff,0xff,0xff,0xff),(0xff,0xff,0xff,0xff)])
   (judgedNotes, combo, maxCombo, xExact, exact, fine, good, lost) = (0,0,0,0,0,0,0,0)
+  defer:
+    destroyRenderInstance(progressBar)
   notes.setLen(0)
   catches.setLen(0)
   postJudges.setLen(0)
@@ -94,15 +121,27 @@ proc gameplay*(): State =
   lastNote = 0
   acc=1
   score=0
+  igt=0
+  floor=0
   block readChart:
-    if fileExists("maps"/chartPath/"chart.cht"):
+    if fileExists("maps"/chartPath/"chart.qv"):
+      var s = openFileStream("maps"/chartPath/"chart.qv", fmRead)
+      defer: s.close()
+      readChartFromBinary(chart, s)
+    elif fileExists("maps"/chartPath/"chart.cht"):
       var s = openFileStream("maps"/chartPath/"chart.cht", fmRead)
       defer: s.close()
       readCht(chart, s)
+      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      defer: ws.close()
+      writeChart(chart,ws)
     else:
       var s = openFileStream("maps"/chartPath/"chart.aff", fmRead)
       defer: s.close()
       readAff(s,chart)
+      var ws = openFileStream("maps"/chartPath/"chart.qv", fmWrite)
+      defer: ws.close()
+      writeChart(chart,ws)
   initChart(chart)
   defer:
     destroyRenderInstance(chart.ri)
@@ -110,7 +149,7 @@ proc gameplay*(): State =
   if fileExists("maps"/chartPath/"music.ogg"):
     loadMusic("maps"/chartPath/"music.ogg")
   else:
-    loadMusic("maps"/chartPath/"music.wav")
+    raiseAssert "only OGG supported"
   initTextInstance(titleText, chart.title)
   defer: destroyTextInstance(titleText)
   initTextInstance(levelText, chart.level)
@@ -130,9 +169,9 @@ proc gameplay*(): State =
   time = lastTime
   playMusic()
   defer:stopMusic()
-  while (time-startTime)/1_000_000_000<musicLength()+1 and not window.windowShouldClose():
+  while getMusicPosF()<musicLength() and not window.windowShouldClose():
     time = getMonoTime().ticks()
-    igt = (time-startTime)/1_000_000_000-chart.offset
+    igt = getMusicPosF()-chart.offset
     if time-lastTime >= 16_000_000:
       floor = convertFloor(igt, chart.events)
       if autoPlay:
@@ -141,7 +180,10 @@ proc gameplay*(): State =
         recentlyCaught=false
         dealUpdate()
       score=int(ceil(1000000*acc*(judged/numOfNotes)))+int(ceil(48576*xExact/numOfNotes))
-      glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT)
+      if compatibilityMode:
+        glFinish()
+      else:
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT or GL_BUFFER_UPDATE_BARRIER_BIT)
       render()
       window.swapBuffers()
       lastTime = time
